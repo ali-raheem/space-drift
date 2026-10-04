@@ -27,7 +27,8 @@ npm run icons                              # regenerate icons/*.png (Pillow)
   - Sectors (palette, light direction, sky, puff/rock sprites) are made by `makeSector()`. The next sector is always prepared in the background, so a jump never stalls. `switchSector()` finishes its job synchronously if it isn't ready yet.
   - Background jobs: `addJob(gen, done)` and `runJobs()` (5 ms budget per frame). `finishJob()` forces completion.
   - `adapt()` lowers `dprCap` when frames are consistently slow.
-- `js/settings.js`: the persisted preferences (speed, captions, keep awake). Storage is injectable so it can be tested.
+- `js/audio.js`: `Soundtrack`, the live Web Audio ambient score. It has pad chords plus chimes in a key derived from `sector.hueA` (`setSector`, hooked up through `journey.onSector`), wind and filter that follow `journey.speed`/`phase`, a rumble as black holes get close, and an arrival swell. It starts only after the first user gesture (`unlock()`), and pausing or hiding the tab fades it out and suspends the context. It may use `Math.random`, because the music is cosmetic.
+- `js/settings.js`: the persisted preferences (speed, captions, keep awake, sound, volume). Storage is injectable so it can be tested.
 - `js/app.js`: rAF loop, HUD and captions, keyboard/buttons, `#seed=` hash, idle fade plus a hidden cursor, swallowing the click that wakes the HUD, wake lock, install prompt and service worker registration.
 
 ### Randomness

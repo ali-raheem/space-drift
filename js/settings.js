@@ -5,7 +5,7 @@
 
 export const APP_KEY = 'space-drift';
 export const SPEEDS = [0.25, 0.5, 1, 2, 4];
-export const DEFAULTS = Object.freeze({ speedIndex: 2, captions: true, keepAwake: true });
+export const DEFAULTS = Object.freeze({ speedIndex: 2, captions: true, keepAwake: true, sound: true, volume: 0.6 });
 
 /** e.g. "space-drift:/apps/space/:settings" for a copy served from /apps/space/. */
 export function storageKey(pathname) {
@@ -22,6 +22,8 @@ export function loadSettings(storage, key) {
     if (Number.isInteger(saved.speedIndex) && saved.speedIndex >= 0 && saved.speedIndex < SPEEDS.length) out.speedIndex = saved.speedIndex;
     if (typeof saved.captions === 'boolean') out.captions = saved.captions;
     if (typeof saved.keepAwake === 'boolean') out.keepAwake = saved.keepAwake;
+    if (typeof saved.sound === 'boolean') out.sound = saved.sound;
+    if (typeof saved.volume === 'number' && saved.volume >= 0 && saved.volume <= 1) out.volume = saved.volume;
     return out;
   } catch {
     return { ...DEFAULTS };
@@ -32,6 +34,7 @@ export function saveSettings(storage, key, settings) {
   try {
     storage?.setItem(key, JSON.stringify({
       speedIndex: settings.speedIndex, captions: settings.captions, keepAwake: settings.keepAwake,
+      sound: settings.sound, volume: settings.volume,
     }));
   } catch { /* private mode / quota: preferences just won't stick */ }
 }

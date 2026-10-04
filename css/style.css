@@ -145,6 +145,11 @@ button {
 .panel .row[hidden] { display: none; }
 .panel .row > span { flex: 1; }
 .panel .row small { display: block; color: var(--dim); font-size: 10px; }
+.panel .row small:empty { display: none; }
+.panel .volume { cursor: default; min-height: 36px; padding-top: 0; }
+.panel .volume[hidden] { display: none; }
+.panel .volume .icon-gap { width: 20px; flex: none; }
+.panel .volume input { flex: 1.4; min-width: 0; accent-color: var(--accent); }
 @media (hover: hover) {
   .panel .row:hover { background: rgba(127, 184, 255, 0.1); }
 }

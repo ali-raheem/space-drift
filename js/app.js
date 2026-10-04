@@ -1,6 +1,7 @@
 // App wiring: render loop, HUD, controls, settings, wake lock and offline support.
 
 import { Journey } from './scene.js';
+import { Soundtrack } from './audio.js';
 import { randomSeed } from './rng.js';
 import { SPEEDS, storageKey, loadSettings, saveSettings } from './settings.js';
 import { VERSION, BUILT } from './version.js';
@@ -12,7 +13,8 @@ const el = {
   canvas: $('view'), hud: $('hud'), caption: $('caption'), settings: $('settings'),
   pause: $('btn-pause'), speed: $('btn-speed'), warp: $('btn-warp'), next: $('btn-next'),
   fullBtn: $('btn-full'), settingsBtn: $('btn-settings'),
-  install: $('set-install'), captions: $('set-captions'), awake: $('set-awake'), full: $('set-full'),
+  install: $('set-install'), sound: $('set-sound'), soundHint: $('sound-hint'), volumeRow: $('set-volume'), volume: $('volume'),
+  captions: $('set-captions'), awake: $('set-awake'), full: $('set-full'),
   hide: $('set-hide'), newJourney: $('set-new'), link: $('set-link'), seed: $('seed'), version: $('version'),
 };
 
@@ -25,6 +27,10 @@ const settings = loadSettings(storage, KEY);
 const persist = () => saveSettings(storage, KEY, settings);
 
 const journey = new Journey(el.canvas);
+const soundtrack = new Soundtrack();
+soundtrack.enabled = settings.sound;
+soundtrack.volume = settings.volume;
+journey.onSector = (sector, arrived) => soundtrack.setSector(sector, arrived);
 let paused = false;
 
 // --- seed / URL ------------------------------------------------------------------
@@ -52,6 +58,35 @@ journey.onCaption = ({ kicker, title, sub }) => {
   clearTimeout(captionTimer);
   captionTimer = setTimeout(() => el.caption.classList.remove('show'), CAPTION_SECONDS * 1000);
 };
+// --- sound -----------------------------------------------------------------------
+
+function renderSound() {
+  setSwitch(el.sound, settings.sound);
+  useIcon(el.sound, settings.sound ? 'sound' : 'sound-off');
+  el.volumeRow.hidden = !settings.sound;
+  el.volume.value = String(settings.volume);
+  // Browsers block audio until the first click/tap/key on the page.
+  el.soundHint.textContent = settings.sound && !soundtrack.running ? 'starts after your first click, tap or key press' : '';
+}
+function toggleSound() {
+  settings.sound = !settings.sound;
+  persist();
+  soundtrack.setEnabled(settings.sound);
+  renderSound();
+}
+el.sound.addEventListener('click', toggleSound);
+el.volume.addEventListener('input', () => {
+  settings.volume = Number(el.volume.value);
+  soundtrack.setVolume(settings.volume);
+});
+el.volume.addEventListener('change', persist);
+for (const type of ['pointerdown', 'keydown', 'touchend']) {
+  window.addEventListener(type, () => {
+    soundtrack.unlock();
+    setTimeout(renderSound, 200);
+  }, { capture: true });
+}
+
 function renderCaptions() {
   el.caption.classList.toggle('off', !settings.captions);
   setSwitch(el.captions, settings.captions);
@@ -68,7 +103,10 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
-  if (!paused) journey.frame(dt);
+  if (!paused) {
+    journey.frame(dt);
+    soundtrack.update(journey);
+  }
   requestAnimationFrame(frame);
 }
 
@@ -76,6 +114,7 @@ function frame(now) {
 
 function setPaused(p) {
   paused = p;
+  soundtrack.setPaused(p || document.visibilityState !== 'visible');
   useIcon(el.pause, paused ? 'play' : 'pause');
   el.pause.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
   el.pause.setAttribute('aria-pressed', String(paused));
@@ -169,6 +208,7 @@ window.addEventListener('keydown', (e) => {
     case 'w': case 'W': warpNow(); break;
     case 'n': case 'N': nextEncounter(); break;
     case 'c': case 'C': toggleCaptions(); break;
+    case 'm': case 'M': toggleSound(); break;
     case 'f': case 'F': toggleFullscreen(); break;
     case 's': case 'S': toggleSettings(); break;
     case 'h': case 'H': setHudHidden(!el.hud.classList.contains('hidden')); break;
@@ -257,6 +297,7 @@ async function syncWakeLock() {
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') last = performance.now();
+  soundtrack.setPaused(paused || document.visibilityState !== 'visible');
   syncWakeLock();
 });
 
@@ -284,6 +325,7 @@ el.version.textContent = `v${VERSION} · built ${new Date(BUILT).toLocaleString(
 el.version.title = BUILT;
 renderSpeed();
 renderCaptions();
+renderSound();
 renderFullscreen();
 renderInstall();
 setSwitch(el.awake, settings.keepAwake);

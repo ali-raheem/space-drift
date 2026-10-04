@@ -65,6 +65,7 @@ export class Journey {
     this.speedScale = 1;
     this.reducedMotion = false;
     this.onCaption = () => {};
+    this.onSector = () => {}; // (sector, arrived) whenever the sector changes
     this.frameTimes = [];
     this.resize();
   }
@@ -94,6 +95,7 @@ export class Journey {
     this.prevSector = null;
     this.skyFade = 1;
     this.prepareNextSector();
+    this.onSector(this.sector, false);
     this.announce({ kicker: 'Now entering', title: this.sector.name, sub: `seed ${this.seed.toString(16).padStart(8, '0')}` });
   }
 
@@ -204,6 +206,7 @@ export class Journey {
     this.skyFade = 0;
     this.sectorCount++;
     this.prepareNextSector();
+    this.onSector(this.sector, true);
     this.announce({ kicker: 'Now entering', title: this.sector.name });
   }
 

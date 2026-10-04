@@ -5,6 +5,10 @@ past planets with moons and rings, stars and binary pairs, black holes with lens
 accretion disks, nebulae, asteroid fields, comets and pulsars. Every so often the
 ship jumps to warp or dives through a wormhole into a new sector with its own sky.
 
+A synthesised ambient soundtrack plays along. Each sector has its own key and
+mode, and the music glides into the new key when you arrive. Wind rises with warp
+and the wormhole tunnel, and a low rumble grows as a black hole comes close.
+
 Go fullscreen and leave it running as a screensaver.
 
 There is no build step, there are no dependencies and nothing is fetched from the
@@ -28,9 +32,10 @@ Open `http://localhost:8080/`. It has to be served over HTTP (not `file://`).
 | `W` | Warp now |
 | `N` | Skip to the next encounter |
 | `C` | Captions on/off (remembered) |
+| `M` | Soundtrack on/off (remembered; volume is in settings) |
 | `F` / double-click | Fullscreen |
 | `H` | Hide the interface (tap to bring it back) |
-| `S` | Settings: install, captions, keep awake, new journey, copy link, version |
+| `S` | Settings: install, sound and volume, captions, keep awake, new journey, copy link, version |
 | `Esc` | Close settings |
 
 The controls and the mouse cursor fade after a few idle seconds. While the tab is
@@ -54,7 +59,7 @@ The app is designed to sit next to other apps on the same domain, e.g.
   its own listed files. Its cache names are `space-drift:<path>:<version>`. On
   update it deletes only its own older caches, and it never calls
   `caches.match()`, which would search other apps' caches.
-- **localStorage** holds a single key, `space-drift:<path>:settings`, with three
+- **localStorage** holds a single key, `space-drift:<path>:settings`, with a few
   preferences. Nothing else is read or written.
 
 `tests/sw.test.mjs` runs `sw.js` against fake Cache Storage to check all of this.

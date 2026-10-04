@@ -49,8 +49,8 @@ test('settings round-trip under one key and leave other apps\' keys alone', () =
   const store = fakeStorage({ 'rsb.recent': '[1,2]', theme: 'dark' });
   const key = storageKey('/space/');
   assert.deepEqual(loadSettings(store, key), DEFAULTS);
-  saveSettings(store, key, { speedIndex: 4, captions: false, keepAwake: false, junk: 1 });
-  assert.deepEqual(loadSettings(store, key), { speedIndex: 4, captions: false, keepAwake: false });
+  saveSettings(store, key, { speedIndex: 4, captions: false, keepAwake: false, sound: false, volume: 0.25, junk: 1 });
+  assert.deepEqual(loadSettings(store, key), { speedIndex: 4, captions: false, keepAwake: false, sound: false, volume: 0.25 });
   assert.deepEqual(Object.keys(store.data).sort(), ['rsb.recent', 'space-drift:/space/:settings', 'theme']);
   assert.equal(store.data['rsb.recent'], '[1,2]');
 });
@@ -58,7 +58,7 @@ test('settings round-trip under one key and leave other apps\' keys alone', () =
 test('bad or missing stored settings fall back to defaults', () => {
   const key = storageKey('/');
   assert.deepEqual(loadSettings(fakeStorage({ [key]: '{nope' }), key), DEFAULTS);
-  assert.deepEqual(loadSettings(fakeStorage({ [key]: JSON.stringify({ speedIndex: SPEEDS.length }) }), key), DEFAULTS);
+  assert.deepEqual(loadSettings(fakeStorage({ [key]: JSON.stringify({ speedIndex: SPEEDS.length, volume: 3 }) }), key), DEFAULTS);
   assert.deepEqual(loadSettings(null, key), DEFAULTS);
   const throwing = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } };
   assert.deepEqual(loadSettings(throwing, key), DEFAULTS);
