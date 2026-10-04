@@ -60,7 +60,9 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     try {
-      const response = await fetch(req);
+      // Revalidate rather than trust the HTTP cache: a CDN in front may stamp
+      // long max-ages on scripts, which would otherwise delay new releases.
+      const response = await fetch(req, { cache: 'no-cache' });
       if (response.ok && OWN.has(url.href)) cache.put(url.href, response.clone());
       return response;
     } catch {

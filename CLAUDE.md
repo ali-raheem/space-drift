@@ -51,3 +51,13 @@ Other apps share the origin (deployed alongside RSB etc.). `tests/sw.test.mjs` a
 - **Reduced motion** (`journey.reducedMotion`): gentler warp speed, less sway, slower pulsar and wormhole spin, and a black exit fade instead of a white flash. Keep new effects consistent with this.
 - **Pacing knobs:** `CRUISE`, `WARP`, `BODY_FAR`, `EVENT_WEIGHTS`, and the gaps in `nextEvent()`.
 - **Visual checks:** there's no screenshot test. Drive it with Playwright, or call `journey.nextEvent('<kind>')` and step `update()` in a page that imports `scene.js`.
+
+## Deployment
+
+Live at https://shoryuken.me/space/ (nginx web root `/var/www/shoryuken.me/space/` on `root@185.163.204.17`; see `/var/www/shoryuken.me/CLAUDE.md` there for the server's conventions). After `npm test` and `npm run bump`:
+
+```bash
+rsync -a --delete --chmod=D755,F644 index.html manifest.webmanifest sw.js css js icons root@185.163.204.17:/var/www/shoryuken.me/space/
+```
+
+Cloudflare sits in front and sets `Cache-Control: max-age=14400` on JS/CSS/images, overriding nginx's `no-cache`. So the service worker installs with `cache: 'reload'` and fetches its own files with `cache: 'no-cache'` (a cheap ETag revalidation). Keep both, or returning visitors can run stale code for up to 4 h after a deploy. Browsers always re-check `sw.js` itself.

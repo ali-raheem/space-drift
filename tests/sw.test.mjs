@@ -10,6 +10,7 @@ const source = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 function boot(location, existingCaches = []) {
   const stores = new Map(existingCaches.map((k) => [k, new Map()]));
   const listeners = {};
+  const fetches = [];
   const caches = {
     keys: async () => [...stores.keys()],
     delete: async (k) => stores.delete(k),
@@ -32,13 +33,13 @@ function boot(location, existingCaches = []) {
     clients: { claim: async () => {} },
   };
   const Request = class { constructor(url) { this.url = new URL(url, self.location).href; } };
-  vm.runInNewContext(source, { self, caches, URL, Request, Response: { error: () => 'error' }, fetch: async () => { throw new Error('offline'); }, Promise, Set, console });
+  vm.runInNewContext(source, { self, caches, URL, Request, Response: { error: () => 'error' }, fetch: async (_r, init) => { fetches.push(init); throw new Error('offline'); }, Promise, Set, console });
   const run = async (type, event = {}) => {
     let pending;
     listeners[type]({ ...event, waitUntil: (p) => (pending = p), respondWith: (p) => (pending = p) });
     return { responded: pending !== undefined, value: await pending };
   };
-  return { stores, run };
+  return { stores, run, fetches };
 }
 
 test('caches are named by app and deployment path', async () => {
@@ -57,7 +58,7 @@ test('activation deletes only this deployment\'s older caches', async () => {
 });
 
 test('it only answers for its own files, from its own cache', async () => {
-  const { run } = boot('https://example.com/apps/space/sw.js?v=1');
+  const { run, fetches } = boot('https://example.com/apps/space/sw.js?v=1');
   await run('install');
   const req = (url, mode = 'no-cors') => ({ request: { url, method: 'GET', mode } });
   assert.equal((await run('fetch', req('https://example.com/rsb/index.html', 'navigate'))).responded, false);
@@ -66,4 +67,6 @@ test('it only answers for its own files, from its own cache', async () => {
   const own = await run('fetch', req('https://example.com/apps/space/js/app.js?x=1'));
   assert.equal(own.responded, true);
   assert.equal(own.value, 'cached'); // offline fallback came from our cache
+  // Revalidates instead of trusting a CDN's long max-age on scripts.
+  assert.deepEqual(fetches.map((init) => init?.cache), ['no-cache']);
 });
