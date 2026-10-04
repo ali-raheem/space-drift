@@ -253,6 +253,7 @@ export class Journey {
 
   addBody(body) {
     body.born = this.time;
+    body.spawnZ = body.z; // fade-in is measured from wherever the body started
     this.bodies.push(body);
     return body;
   }
@@ -285,9 +286,10 @@ export class Journey {
   }
 
   makePlanet(rng, kind, R, x, y, z, size, ringed) {
-    const body = this.addBody({ type: 'planet', x, y, z, R, big: true, occluder: true, sprite: null });
+    const body = this.addBody({ type: 'planet', x, y, z, R, big: true, occluder: true, sprite: null, readyAt: null });
     this.addJob(planetJob({ rng: rng.fork(), kind, size, light: this.sector.light }), (res) => {
       body.sprite = res.canvas;
+      body.readyAt = this.time;
       body.diskFrac = res.diskFrac;
     });
     if (ringed) {
@@ -323,8 +325,8 @@ export class Journey {
   }
 
   makeStar(rng, color, R, x, y, z) {
-    const body = this.addBody({ type: 'star', x, y, z, R, color, big: true, occluder: true, sprite: null, rayPhase: rng.float(0, TAU), rays: rng.int(6, 12) });
-    this.addJob(starSurfaceJob({ rng: rng.fork(), color, size: 192 }), (c) => (body.sprite = c));
+    const body = this.addBody({ type: 'star', x, y, z, R, color, big: true, occluder: true, sprite: null, readyAt: null, rayPhase: rng.float(0, TAU), rays: rng.int(6, 12) });
+    this.addJob(starSurfaceJob({ rng: rng.fork(), color, size: 192 }), (c) => { body.sprite = c; body.readyAt = this.time; });
     return body;
   }
 
@@ -333,11 +335,11 @@ export class Journey {
     const R = rng.float(110, 220);
     const [x, y] = this.passOffset(R, 5, 8);
     const body = this.addBody({
-      type: 'blackhole', x, y, z: BODY_FAR, R, big: true, occluder: true, disk: null,
+      type: 'blackhole', x, y, z: BODY_FAR, R, big: true, occluder: true, disk: null, readyAt: null,
       tilt: rng.float(0.1, 0.32), angle: rng.float(-0.35, 0.35), spin: 0, spinRate: rng.float(0.15, 0.3) * rng.sign(),
     });
     body.announce = { kicker: 'Black hole', title: bodyName(rng, 'remnant'), sub: `${rng.int(4, 90)} solar masses` };
-    this.addJob(diskJob({ rng: rng.fork(), size: 512 }), (c) => (body.disk = c));
+    this.addJob(diskJob({ rng: rng.fork(), size: 512 }), (c) => { body.disk = c; body.readyAt = this.time; });
   }
 
   spawnNebula() {
@@ -622,10 +624,15 @@ export class Journey {
       b.sx = (b.x / b.z) * f;
       b.sy = (b.y / b.z) * f;
       b.sr = (b.R / b.z) * f;
-      b.alpha = smooth(BODY_FAR * 1.02, BODY_FAR * 0.78, b.z);
-      if (b.type === 'blackhole') lenses.push({ sx: b.sx, sy: b.sy, z: b.z, e2: (b.sr * 2.4) ** 2, reach2: (b.sr * 18) ** 2 });
-      if (b.type === 'wormhole') lenses.push({ sx: b.sx, sy: b.sy, z: b.z, e2: (b.sr * 0.9) ** 2, reach2: (b.sr * 5) ** 2 });
-      if (b.occluder && b.alpha > 0.5) occluders.push({ sx: b.sx, sy: b.sy, z: b.z, r2: b.sr * b.sr });
+      // Fade in gently: over the first ~45% of the body's approach, never faster
+      // than a few seconds, and only once its texture has finished painting.
+      const byDistance = smooth(b.spawnZ, b.spawnZ * 0.55, b.z);
+      const byTime = smooth(0, 4, this.time - b.born);
+      const byTexture = b.readyAt === undefined ? 1 : b.readyAt === null ? 0 : smooth(0, 2.5, this.time - b.readyAt);
+      b.alpha = byDistance * byTime * byTexture;
+      if (b.type === 'blackhole') lenses.push({ sx: b.sx, sy: b.sy, z: b.z, e2: b.alpha * (b.sr * 2.4) ** 2, reach2: (b.sr * 18) ** 2 });
+      if (b.type === 'wormhole') lenses.push({ sx: b.sx, sy: b.sy, z: b.z, e2: b.alpha * (b.sr * 0.9) ** 2, reach2: (b.sr * 5) ** 2 });
+      if (b.occluder && b.alpha > 0.01) occluders.push({ sx: b.sx, sy: b.sy, z: b.z, r2: b.sr * b.sr, a: b.alpha });
     }
 
     this.drawField(this.stars, lenses, occluders, 1);
@@ -669,11 +676,12 @@ export class Journey {
       const zi = z[i];
       let sx = (x[i] / zi) * f, sy = (y[i] / zi) * f;
       if (sx > lim || sx < -lim || sy > lim || sy < -lim) { field.spawn(i, far * this.fx.float(0.85, 1)); continue; }
-      let hidden = false;
+      // Stars behind a body dim as it fades in, rather than vanishing at once.
+      let seen = 1;
       for (const o of occluders) {
-        if (zi > o.z && (sx - o.sx) ** 2 + (sy - o.sy) ** 2 < o.r2) { hidden = true; break; }
+        if (zi > o.z && (sx - o.sx) ** 2 + (sy - o.sy) ** 2 < o.r2) seen *= 1 - o.a;
       }
-      if (hidden) continue;
+      if (seen < 0.02) continue;
       for (const L of lenses) {
         if (zi <= L.z) continue;
         const ddx = sx - L.sx, ddy = sy - L.sy;
@@ -685,7 +693,7 @@ export class Journey {
         }
       }
       const depth = 1 - zi / far;
-      const a = Math.min(1, depth * 2.2) * alphaMul;
+      const a = Math.min(1, depth * 2.2) * alphaMul * seen;
       const size = Math.min(field.maxPx * dpr, Math.max(0.55 * dpr, (field.size * mag[i] * f) / zi));
       ctx.globalAlpha = Math.min(1, a * (0.45 + mag[i] * 0.5));
       const z2 = zi + streakZ;
@@ -707,15 +715,7 @@ export class Journey {
 
   drawPlanet(b) {
     const { ctx } = this;
-    if (!b.sprite) {
-      // Still being painted: a dim dot stands in while it's far away.
-      ctx.globalAlpha = b.alpha * 0.5;
-      ctx.fillStyle = '#8a94a8';
-      ctx.beginPath();
-      ctx.arc(b.sx, b.sy, Math.max(0.6, Math.min(b.sr, 4)), 0, TAU);
-      ctx.fill();
-      return;
-    }
+    if (!b.sprite) return; // still being painted; alpha is 0 until then
     const half = b.sr / b.diskFrac;
     if (b.ring) this.drawRing(b, -1);
     ctx.globalAlpha = b.alpha;
@@ -887,7 +887,7 @@ export class Journey {
   drawPuff(b) {
     const { ctx } = this;
     const near = smooth(b.R * 0.3, b.R * 2.5, b.z);
-    const a = b.opacity * near * smooth(BODY_FAR * 1.3, BODY_FAR * 0.8, b.z);
+    const a = b.opacity * near * b.alpha;
     if (a <= 0.004 || b.sr > this.halfDiag * 4) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
