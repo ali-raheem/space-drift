@@ -61,3 +61,9 @@ rsync -a --delete --chmod=D755,F644 index.html manifest.webmanifest sw.js css js
 ```
 
 Cloudflare sits in front and sets `Cache-Control: max-age=14400` on JS/CSS/images, overriding nginx's `no-cache`. So the service worker installs with `cache: 'reload'` and fetches its own files with `cache: 'no-cache'` (a cheap ETag revalidation). Keep both, or returning visitors can run stale code for up to 4 h after a deploy. Browsers always re-check `sw.js` itself.
+
+Mirror at http://ali.sdf-eu.org/space/ (SDF-EU, NetBSD + Apache; `~/html` is the web root). It's HTTP only, because the TLS cert covers only `sdfeu.org`. So the service worker, PWA install, wake lock and clipboard don't work there, but the journey and the sound do. `~/html` also holds unrelated files, so keep the deploy inside `space/`:
+
+```bash
+rsync -a --delete --chmod=D755,F644 index.html manifest.webmanifest sw.js css js icons ali@sdf-eu.org:html/space/
+```
