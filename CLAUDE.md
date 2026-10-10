@@ -54,7 +54,7 @@ Other apps share the origin (deployed alongside RSB etc.). `tests/sw.test.mjs` a
 
 ## Deployment
 
-Live at https://shoryuken.me/space/ (nginx web root `/var/www/shoryuken.me/space/` on `root@185.163.204.17`; see `/var/www/shoryuken.me/CLAUDE.md` there for the server's conventions). After `npm test` and `npm run bump`:
+Live at https://shoryuken.me/space/ (nginx web root `/var/www/shoryuken.me/space/` on `root@185.163.204.17`; see `../CLAUDE.md` for the server's conventions). After `npm test` and `npm run bump`:
 
 ```bash
 rsync -a --delete --chmod=D755,F644 index.html manifest.webmanifest sw.js css js icons root@185.163.204.17:/var/www/shoryuken.me/space/
