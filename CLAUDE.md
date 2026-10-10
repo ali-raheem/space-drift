@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Space Drift: an endless procedurally generated flight through space (planets, stars, black holes, nebulae, asteroids, comets, pulsars, warp jumps, wormholes), shipped as an offline PWA and meant to double as a screensaver. There is no build step and there are no dependencies. The code is plain ES modules loaded straight from `index.html`. It's a sibling of `../RSB` and shares its HUD and control conventions.
 
-(The parent `../CLAUDE.md` describes an unrelated Rust/Fallout project. Ignore it here.)
+(The parent `../CLAUDE.md` describes the shoryuken.me workspace and its shared-origin rules; the one above that, `~/Workspace/CLAUDE.md`, is an unrelated Rust/Fallout project. Ignore that one here.)
 
 ## Commands
 
