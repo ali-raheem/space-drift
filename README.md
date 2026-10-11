@@ -1,5 +1,14 @@
 # Space Drift
 
+[![CI](https://github.com/ali-raheem/space-drift/actions/workflows/ci.yml/badge.svg)](https://github.com/ali-raheem/space-drift/actions/workflows/ci.yml) [![GitHub Pages](https://github.com/ali-raheem/space-drift/actions/workflows/pages.yml/badge.svg)](https://github.com/ali-raheem/space-drift/actions/workflows/pages.yml)
+
+**▶ Try it live: [shoryuken.me/space](https://shoryuken.me/space/)** · mirror on [GitHub Pages](https://ali-raheem.github.io/space-drift/) · installable, works offline
+
+<p align="center">
+  <a href="https://shoryuken.me/space/"><img src="docs/screenshots/desktop.webp" alt="Space Drift on a desktop browser" width="74%"></a>
+  <a href="https://shoryuken.me/space/"><img src="docs/screenshots/mobile.webp" alt="Space Drift on a phone" width="22%"></a>
+</p>
+
 An endless, hands-off journey through procedurally generated space. You cruise
 past planets with moons and rings, stars and binary pairs, black holes with lensed
 accretion disks, nebulae, asteroid fields, comets and pulsars. Every so often the
