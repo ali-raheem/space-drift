@@ -91,3 +91,7 @@ npm test           # node --test tests/*.test.mjs
 npm run bump       # bump js/version.js (+ package.json); `-- minor` / `-- major`
 npm run icons      # regenerate PNG icons (needs Pillow); icons/icon.svg is hand-written
 ```
+
+## Licence
+
+[MIT](LICENSE) © 2026 Ali Raheem.
